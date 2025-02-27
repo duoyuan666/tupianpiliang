@@ -4,18 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>图片文字编辑工具</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图片文字编辑工具</title>
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&family=ZCOOL+XiaoWei&family=Zhi+Mang+Xing&family=Long+Cang&family=Liu+Jian+Mao+Cao&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&family=ZCOOL+XiaoWei&family=Zhi+Mang+Xing&family=Long+Cang&display=swap" rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
@@ -23,7 +14,7 @@
             padding: 0;
         }
         body {
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
             background-color: #f5f5f5;
             color: #333;
             padding: 20px;
@@ -65,6 +56,38 @@
             font-size: 16px;
             color: #2c3e50;
         }
+        
+        /* 操作历史按钮组 */
+        .history-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .history-buttons button {
+            flex: 1;
+            padding: 8px;
+            font-size: 13px;
+        }
+        .history-buttons button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        /* 文本预览区 */
+        .text-preview {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 60px;
+            background-color: #f9f9f9;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        .text-preview-content {
+            word-break: break-word;
+        }
+        
         label {
             display: flex;
             flex-direction: column;
@@ -142,6 +165,7 @@
             padding: 10px;
             border: 1px solid #eee;
             border-radius: 4px;
+            margin-bottom: 10px;
         }
         .template-item:hover {
             background-color: #f9f9f9;
@@ -150,9 +174,34 @@
             display: flex;
             gap: 5px;
         }
+        .template-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+        .template-details {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .template-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .template-text-preview {
+            font-size: 12px;
+            color: #7f8c8d;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
         .template-preview {
             width: 50px;
             height: 50px;
+            min-width: 50px;
             border: 1px solid #ddd;
             border-radius: 4px;
             overflow: hidden;
@@ -171,6 +220,30 @@
         }
         .text-layer.selected {
             border: 2px dashed #3498db;
+        }
+        
+        /* 文本图层删除按钮 */
+        .layer-delete-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 20px;
+            height: 20px;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s;
+            line-height: 1;
+        }
+        .text-layer:hover .layer-delete-btn {
+            opacity: 1;
         }
         
         /* 文本特效样式 */
@@ -290,6 +363,12 @@
                 <h3>图片上传</h3>
                 <input type="file" id="imageUpload" accept="image/*">
                 <button id="resetCanvas">重置画布</button>
+                
+                <h3 style="margin-top: 15px;">操作历史</h3>
+                <div class="history-buttons">
+                    <button id="undoButton" disabled>撤销</button>
+                    <button id="redoButton" disabled>重做</button>
+                </div>
             </div>
             
             <div class="toolbar-section">
@@ -309,7 +388,6 @@
                         <option value="'ZCOOL XiaoWei', serif">站酷小薇</option>
                         <option value="'Zhi Mang Xing', cursive">智芒星</option>
                         <option value="'Long Cang', cursive">长仓</option>
-                        <option value="'Liu Jian Mao Cao', cursive">柳荐毛草</option>
                     </select>
                 </label>
                 <label>
@@ -339,6 +417,9 @@
                     背景透明度
                     <input type="range" id="bgOpacity" min="0" max="1" step="0.1" value="0">
                 </label>
+                <div class="text-preview">
+                    <div id="textPreview" class="text-preview-content">文字预览区域</div>
+                </div>
                 <button id="addText">添加文本</button>
             </div>
             
@@ -393,6 +474,11 @@
         let isDragging = false;
         let startX, startY, layerX, layerY;
         
+        // 操作历史记录
+        let history = [];
+        let historyIndex = -1;
+        let isUndoingRedoing = false; // 防止撤销/重做操作触发历史记录
+        
         // 初始化画布
         function initCanvas() {
             canvas.width = 600;
@@ -404,7 +490,20 @@
             ctx.textAlign = 'center';
             ctx.fillText('请上传图片', canvas.width / 2, canvas.height / 2);
             
+            textLayers = [];
+            selectedLayer = null;
+            history = [];
+            historyIndex = -1;
             renderTextLayers();
+            updateHistoryButtons();
+            
+            // 重置预览
+            document.getElementById('textContent').value = '';
+            updateTextPreview();
+            
+            // 重置添加按钮
+            document.getElementById('addText').innerText = '添加文本';
+            document.getElementById('addText').onclick = addNewTextLayer;
         }
         
         // 加载图片到画布
@@ -416,6 +515,7 @@
                     currentImage = img;
                     // 保持画布大小不变，调整图片以适应画布
                     drawImageOnCanvas();
+                    saveToHistory(); // 保存图片加载状态
                 };
                 img.src = e.target.result;
             };
@@ -456,6 +556,7 @@
             textLayers.push(textLayer);
             renderTextLayers();
             selectLayer(layerId);
+            saveToHistory();
             
             return textLayer;
         }
@@ -501,6 +602,25 @@
                     e.stopPropagation();
                 });
                 
+                // 添加双击编辑功能
+                layerElement.addEventListener('dblclick', (e) => {
+                    openEditMode(layer);
+                    e.stopPropagation();
+                });
+                
+                // 添加删除按钮
+                const deleteBtn = document.createElement('div');
+                deleteBtn.className = 'layer-delete-btn';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.style.lineHeight = '1';
+                deleteBtn.addEventListener('click', (e) => {
+                    if (confirm('确定要删除这个文本图层吗？')) {
+                        deleteLayer(layer.id);
+                    }
+                    e.stopPropagation();
+                });
+                
+                layerElement.appendChild(deleteBtn);
                 container.appendChild(layerElement);
                 
                 // 给选中的图层添加选中样式
@@ -571,6 +691,9 @@
         
         // 停止拖动
         function stopDrag() {
+            if (isDragging && selectedLayer) {
+                saveToHistory();
+            }
             isDragging = false;
             document.removeEventListener('mousemove', onDrag);
             document.removeEventListener('mouseup', stopDrag);
@@ -578,1340 +701,117 @@
         
         // 停止触摸拖动
         function stopDragTouch() {
+            if (isDragging && selectedLayer) {
+                saveToHistory();
+            }
             isDragging = false;
             document.removeEventListener('touchmove', onDragTouch);
             document.removeEventListener('touchend', stopDragTouch);
         }
         
-        // 保存模板
-        function saveTemplate() {
-            const name = document.getElementById('templateName').value.trim() || `模板 ${templates.length + 1}`;
+        // 历史记录相关函数
+        function saveToHistory() {
+            if (isUndoingRedoing) return;
             
-            // 创建缩略图
-            const thumbnailCanvas = document.createElement('canvas');
-            thumbnailCanvas.width = 100;
-            thumbnailCanvas.height = 100;
-            const thumbnailCtx = thumbnailCanvas.getContext('2d');
-            
-            // 如果有图片，绘制缩略图
-            if (currentImage) {
-                const ratio = Math.min(100 / currentImage.width, 100 / currentImage.height);
-                const width = currentImage.width * ratio;
-                const height = currentImage.height * ratio;
-                const x = (100 - width) / 2;
-                const y = (100 - height) / 2;
-                
-                thumbnailCtx.drawImage(currentImage, x, y, width, height);
-            } else {
-                thumbnailCtx.fillStyle = '#f0f0f0';
-                thumbnailCtx.fillRect(0, 0, 100, 100);
+            // 删除当前位置之后的历史记录
+            if (historyIndex < history.length - 1) {
+                history = history.slice(0, historyIndex + 1);
             }
             
-            const template = {
-                id: Date.now().toString(),
-                name,
+            // 保存当前状态
+            history.push({
                 textLayers: JSON.parse(JSON.stringify(textLayers)),
-                thumbnail: thumbnailCanvas.toDataURL()
-            };
+                selectedLayerId: selectedLayer ? selectedLayer.id : null
+            });
             
-            templates.push(template);
-            localStorage.setItem('imageTextTemplates', JSON.stringify(templates));
-            
-            renderTemplateList();
-            alert(`模板 "${name}" 已保存`);
+            historyIndex = history.length - 1;
+            updateHistoryButtons();
         }
         
-        // 应用模板
-        function applyTemplate(templateId) {
-            const template = templates.find(t => t.id === templateId);
-            if (!template) return;
+        function undo() {
+            if (historyIndex <= 0) return;
             
-            textLayers = JSON.parse(JSON.stringify(template.textLayers));
+            isUndoingRedoing = true;
+            historyIndex--;
+            
+            const state = history[historyIndex];
+            textLayers = JSON.parse(JSON.stringify(state.textLayers));
+            selectedLayer = state.selectedLayerId ? 
+                textLayers.find(layer => layer.id === state.selectedLayerId) : null;
+            
             renderTextLayers();
+            updateHistoryButtons();
+            isUndoingRedoing = false;
         }
         
-        // 删除模板
-        function deleteTemplate(templateId) {
-            if (!confirm('确定要删除这个模板吗？')) return;
+        function redo() {
+            if (historyIndex >= history.length - 1) return;
             
-            templates = templates.filter(t => t.id !== templateId);
-            localStorage.setItem('imageTextTemplates', JSON.stringify(templates));
-            renderTemplateList();
+            isUndoingRedoing = true;
+            historyIndex++;
+            
+            const state = history[historyIndex];
+            textLayers = JSON.parse(JSON.stringify(state.textLayers));
+            selectedLayer = state.selectedLayerId ? 
+                textLayers.find(layer => layer.id === state.selectedLayerId) : null;
+            
+            renderTextLayers();
+            updateHistoryButtons();
+            isUndoingRedoing = false;
         }
         
-        // 渲染模板列表
-        function renderTemplateList() {
-            const container = document.getElementById('templateList');
-            container.innerHTML = '';
-            
-            // 更新模板下拉选择框
-            const templateSelect = document.getElementById('templateSelect');
-            templateSelect.innerHTML = '<option value="">-- 选择要应用的模板 --</option>';
-            
-            if (templates.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: #999;">暂无保存的模板</div>';
-                return;
-            }
-            
-            templates.forEach(template => {
-                // 添加到模板列表
-                const item = document.createElement('div');
-                item.className = 'template-item';
-                
-                const preview = document.createElement('div');
-                preview.className = 'template-preview';
-                const img = document.createElement('img');
-                img.src = template.thumbnail;
-                preview.appendChild(img);
-                
-                const name = document.createElement('div');
-                name.textContent = template.name;
-                
-                const buttons = document.createElement('div');
-                buttons.className = 'template-buttons';
-                
-                const applyButton = document.createElement('button');
-                applyButton.textContent = '应用';
-                applyButton.onclick = () => applyTemplate(template.id);
-                
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = '删除';
-                deleteButton.className = 'danger';
-                deleteButton.onclick = () => deleteTemplate(template.id);
-                
-                buttons.appendChild(applyButton);
-                buttons.appendChild(deleteButton);
-                
-                item.appendChild(preview);
-                item.appendChild(name);
-                item.appendChild(buttons);
-                container.appendChild(item);
-                
-                // 添加到下拉选择框
-                const option = document.createElement('option');
-                option.value = template.id;
-                option.textContent = template.name;
-                templateSelect.appendChild(option);
-            });
+        function updateHistoryButtons() {
+            document.getElementById('undoButton').disabled = historyIndex <= 0;
+            document.getElementById('redoButton').disabled = historyIndex >= history.length - 1;
         }
         
-        // 添加批量图片
-        function addBatchImage(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    batchImages.push({
-                        id: Date.now().toString(),
-                        img: img,
-                        src: e.target.result
-                    });
-                    renderBatchImages();
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        // 渲染批量图片列表
-        function renderBatchImages() {
-            const container = document.getElementById('batchImages');
-            container.innerHTML = '';
+        // 删除图层
+        function deleteLayer(layerId) {
+            textLayers = textLayers.filter(layer => layer.id !== layerId);
             
-            batchImages.forEach(item => {
-                const imageItem = document.createElement('div');
-                imageItem.className = 'batch-image-item';
-                
-                const img = document.createElement('img');
-                img.src = item.src;
-                
-                const removeButton = document.createElement('button');
-                removeButton.className = 'remove-button';
-                removeButton.textContent = '×';
-                removeButton.onclick = () => {
-                    batchImages = batchImages.filter(i => i.id !== item.id);
-                    renderBatchImages();
-                };
-                
-                imageItem.appendChild(img);
-                imageItem.appendChild(removeButton);
-                container.appendChild(imageItem);
-            });
-        }
-        
-        // 将选定模板应用到所有批量图片
-        function applyTemplateToAll() {
-            if (batchImages.length === 0) {
-                alert('请先添加批量处理的图片');
-                return;
-            }
-            
-            const templateSelect = document.getElementById('templateSelect');
-            const selectedTemplateId = templateSelect.value;
-            
-            if (!selectedTemplateId) {
-                // 如果没有选择模板但有当前文本图层，使用当前文本图层
-                if (textLayers.length === 0) {
-                    alert('请先选择一个模板或添加文本');
-                    return;
-                }
-                
-                alert(`当前文本设置将应用到 ${batchImages.length} 张图片`);
-            } else {
-                // 应用选定的模板
-                const template = templates.find(t => t.id === selectedTemplateId);
-                if (template) {
-                    textLayers = JSON.parse(JSON.stringify(template.textLayers));
-                    renderTextLayers();
-                    alert(`模板 "${template.name}" 将应用到 ${batchImages.length} 张图片`);
-                }
-            }
-        }
-        
-        // 导出当前图片
-        function exportImage() {
-            if (!currentImage) {
-                alert('请先上传图片');
-                return;
-            }
-            
-            // 创建DOM图像渲染方法 - 优先使用DOM方式以保留文本特效
-            const renderDomToImage = () => {
-                // 创建临时容器
-                const tempContainer = document.createElement('div');
-                tempContainer.style.position = 'absolute';
-                tempContainer.style.left = '-9999px';
-                tempContainer.style.top = '-9999px';
-                document.body.appendChild(tempContainer);
-                
-                // 创建图像容器
-                const imageContainer = document.createElement('div');
-                imageContainer.style.position = 'relative';
-                imageContainer.style.width = `${canvas.width}px`;
-                imageContainer.style.height = `${canvas.height}px`;
-                tempContainer.appendChild(imageContainer);
-                
-                // 添加背景图片
-                const img = document.createElement('img');
-                img.src = currentImage.src;
-                img.style.position = 'absolute';
-                img.style.width = '100%';
-                img.style.height = '100%';
-                imageContainer.appendChild(img);
-                
-                // 添加所有文本图层
-                textLayers.forEach(layer => {
-                    const textDiv = document.createElement('div');
-                    textDiv.style.position = 'absolute';
-                    textDiv.style.left = `${layer.x}px`;
-                    textDiv.style.top = `${layer.y}px`;
-                    textDiv.style.fontSize = `${layer.fontSize}px`;
-                    textDiv.style.color = layer.color;
-                    textDiv.style.fontFamily = layer.fontFamily;
-                    
-                    // 添加特效
-                    if (layer.textEffect && layer.textEffect !== 'none') {
-                        textDiv.classList.add(`text-effect-${layer.textEffect}`);
-                    }
-                    
-                    // 设置背景
-                    if (layer.bgOpacity > 0) {
-                        const rgb = hexToRgb(layer.bgColor);
-                        textDiv.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${layer.bgOpacity})`;
-                    }
-                    
-                    textDiv.innerText = layer.text;
-                    imageContainer.appendChild(textDiv);
-                });
-                
-                // 使用html2canvas将DOM转换为图像
-                // 注意：实际情况可能需要引入html2canvas库，这里使用普通Canvas渲染作为备选
-                alert('正在生成图片，包含特殊文字效果...');
-                
-                // 这里是备用的canvas渲染
-                const exportCanvas = document.createElement('canvas');
-                exportCanvas.width = canvas.width;
-                exportCanvas.height = canvas.height;
-                const exportCtx = exportCanvas.getContext('2d');
-                
-                // 绘制背景图片
-                exportCtx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
-                
-                // 绘制文本图层
-                textLayers.forEach(layer => {
-                    exportCtx.font = `${layer.fontSize}px ${layer.fontFamily || 'sans-serif'}`;
-                    exportCtx.fillStyle = layer.color;
-                    
-                    // 绘制背景
-                    if (layer.bgOpacity > 0) {
-                        const textWidth = exportCtx.measureText(layer.text).width;
-                        const textHeight = layer.fontSize * 1.2;
-                        const rgb = hexToRgb(layer.bgColor);
-                        
-                        exportCtx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${layer.bgOpacity})`;
-                        exportCtx.fillRect(layer.x, layer.y - layer.fontSize * 0.8, textWidth, textHeight);
-                        exportCtx.fillStyle = layer.color;
-                    }
-                    
-                    exportCtx.fillText(layer.text, layer.x, layer.y);
-                });
-                
-                // 导出为图片
-                const dataURL = exportCanvas.toDataURL('image/png');
-                
-                // 创建下载链接
-                const link = document.createElement('a');
-                link.download = 'image-with-text.png';
-                link.href = dataURL;
-                link.click();
-                
-                // 清理临时DOM
-                document.body.removeChild(tempContainer);
-            };
-            
-            // 执行渲染
-            renderDomToImage();
-            
-            // 导出为图片
-            const dataURL = exportCanvas.toDataURL('image/png');
-            
-            // 创建下载链接
-            const link = document.createElement('a');
-            link.download = 'image-with-text.png';
-            link.href = dataURL;
-            link.click();
-        }
-        
-        // 导出所有批量图片为ZIP包
-        function exportAllImages() {
-            if (batchImages.length === 0) {
-                alert('请先添加批量处理的图片');
-                return;
-            }
-            
-            if (textLayers.length === 0) {
-                alert('请先添加文本或应用模板');
-                return;
-            }
-            
-            // 创建加载提示
-            const loading = document.createElement('div');
-            loading.className = 'loading';
-            loading.innerHTML = '<div class="loading-spinner"></div><div style="margin-top: 10px;">处理中...</div>';
-            document.body.appendChild(loading);
-            
-            // 创建ZIP文件
-            const zip = new JSZip();
-            const imgFolder = zip.folder("处理后图片");
-            let processedCount = 0;
-            
-            // 处理每张图片
-            batchImages.forEach((item, index) => {
-                // 创建一个离屏画布
-                const exportCanvas = document.createElement('canvas');
-                exportCanvas.width = item.img.width;
-                exportCanvas.height = item.img.height;
-                const exportCtx = exportCanvas.getContext('2d');
-                
-                // 绘制背景图片
-                exportCtx.drawImage(item.img, 0, 0, item.img.width, item.img.height);
-                
-                // 绘制文本图层
-                textLayers.forEach(layer => {
-                    exportCtx.font = `${layer.fontSize}px ${layer.fontFamily || 'sans-serif'}`;
-                    exportCtx.fillStyle = layer.color;
-                    
-                    // 绘制背景
-                    if (layer.bgOpacity > 0) {
-                        const textWidth = exportCtx.measureText(layer.text).width;
-                        const textHeight = layer.fontSize * 1.2;
-                        const rgb = hexToRgb(layer.bgColor);
-                        
-                        exportCtx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${layer.bgOpacity})`;
-                        exportCtx.fillRect(layer.x, layer.y - layer.fontSize * 0.8, textWidth, textHeight);
-                        exportCtx.fillStyle = layer.color;
-                    }
-                    
-                    // 如果有特效，尝试绘制简化版特效
-                    if (layer.textEffect === 'shadow') {
-                        exportCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-                        exportCtx.shadowBlur = 5;
-                        exportCtx.shadowOffsetX = 3;
-                        exportCtx.shadowOffsetY = 3;
-                    } else if (layer.textEffect === 'outline') {
-                        // 简单描边实现
-                        exportCtx.strokeStyle = '#000';
-                        exportCtx.lineWidth = 2;
-                        exportCtx.strokeText(layer.text, layer.x, layer.y);
-                    }
-                    
-                    exportCtx.fillText(layer.text, layer.x, layer.y);
-                    
-                    // 重置阴影
-                    exportCtx.shadowColor = 'transparent';
-                    exportCtx.shadowBlur = 0;
-                    exportCtx.shadowOffsetX = 0;
-                    exportCtx.shadowOffsetY = 0;
-                });
-                
-                // 转换为图片数据
-                exportCanvas.toBlob(blob => {
-                    // 添加到ZIP文件
-                    const fileName = `image_${index + 1}.png`;
-                    imgFolder.file(fileName, blob);
-                    
-                    processedCount++;
-                    
-                    // 当所有图片都处理完成后生成并下载ZIP文件
-                    if (processedCount === batchImages.length) {
-                        zip.generateAsync({type: "blob"}).then(function(content) {
-                            saveAs(content, "processed_images.zip");
-                            document.body.removeChild(loading);
-                            alert('导出完成！图片已打包为ZIP文件');
-                        });
-                    }
-                }, 'image/png');
-            });
-        }
-        
-        // 辅助函数：十六进制颜色转RGB
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
-            } : {r: 0, g: 0, b: 0};
-        }
-        
-        // 事件监听
-        document.getElementById('imageUpload').addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                loadImage(e.target.files[0]);
-            }
-        });
-        
-        document.getElementById('resetCanvas').addEventListener('click', () => {
-            textLayers = [];
-            selectedLayer = null;
-            initCanvas();
-        });
-        
-        document.getElementById('addText').addEventListener('click', () => {
-            const text = document.getElementById('textContent').value.trim();
-            if (!text) {
-                alert('请输入文本内容');
-                return;
-            }
-            
-            const fontSize = parseInt(document.getElementById('fontSize').value) || 24;
-            const color = document.getElementById('fontColor').value;
-            const bgColor = document.getElementById('bgColor').value;
-            const bgOpacity = parseFloat(document.getElementById('bgOpacity').value);
-            const fontFamily = document.getElementById('fontFamily').value;
-            const textEffect = document.getElementById('textEffect').value;
-            
-            addTextLayer(text, 50, 50, fontSize, color, bgColor, bgOpacity, fontFamily, textEffect);
-        });
-        
-        document.getElementById('saveTemplate').addEventListener('click', saveTemplate);
-        document.getElementById('exportImage').addEventListener('click', exportImage);
-        
-        document.getElementById('batchUpload').addEventListener('change', (e) => {
-            if (e.target.files) {
-                Array.from(e.target.files).forEach(file => {
-                    addBatchImage(file);
-                });
-            }
-        });
-        
-        document.getElementById('applyToAll').addEventListener('click', applyTemplateToAll);
-        document.getElementById('exportAll').addEventListener('click', exportAllImages);
-        
-        // 点击画布区域取消选择
-        document.querySelector('.canvas-container').addEventListener('click', (e) => {
-            if (e.target === canvas || e.target.classList.contains('canvas-container')) {
+            if (selectedLayer && selectedLayer.id === layerId) {
                 selectedLayer = null;
-                renderTextLayers();
             }
-        });
-        
-        // 页面加载完成后初始化
-        window.addEventListener('load', () => {
-            initCanvas();
-            renderTemplateList();
-        });
-    </script>
-</body>
-</html>
-        body {
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #2c3e50;
-        }
-        .toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding: 15px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        .toolbar-section {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 10px;
-            border-right: 1px solid #eee;
-            min-width: 200px;
-        }
-        .toolbar-section:last-child {
-            border-right: none;
-        }
-        .toolbar-section h3 {
-            margin-bottom: 10px;
-            font-size: 16px;
-            color: #2c3e50;
-        }
-        label {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            font-size: 14px;
-        }
-        input, select, button {
-            padding: 8px 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            cursor: pointer;
-            border: none;
-            padding: 10px 15px;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        button.danger {
-            background-color: #e74c3c;
-        }
-        button.danger:hover {
-            background-color: #c0392b;
-        }
-        button.success {
-            background-color: #2ecc71;
-        }
-        button.success:hover {
-            background-color: #27ae60;
-        }
-        .editor-area {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        .canvas-container {
-            position: relative;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            flex: 1;
-            min-width: 300px;
-            min-height: 400px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #canvas {
-            max-width: 100%;
-            max-height: 100%;
-            display: block;
-        }
-        .template-container {
-            flex: 0 0 300px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        .template-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            border: 1px solid #eee;
-            border-radius: 4px;
-        }
-        .template-item:hover {
-            background-color: #f9f9f9;
-        }
-        .template-buttons {
-            display: flex;
-            gap: 5px;
-        }
-        .template-preview {
-            width: 50px;
-            height: 50px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .template-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .text-layer {
-            position: absolute;
-            cursor: move;
-            padding: 5px;
-            border: 2px dashed transparent;
-            user-select: none;
-        }
-        .text-layer.selected {
-            border: 2px dashed #3498db;
-        }
-        .batch-container {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            margin-top: 20px;
-        }
-        .batch-images {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .batch-image-item {
-            position: relative;
-            width: 100px;
-            height: 100px;
-        }
-        .batch-image-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 4px;
-        }
-        .batch-image-item .remove-button {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 12px;
-            line-height: 1;
-            padding: 0;
-        }
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .loading-spinner {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        @media (max-width: 768px) {
-            .toolbar {
-                flex-direction: column;
-            }
-            .toolbar-section {
-                border-right: none;
-                border-bottom: 1px solid #eee;
-                padding-bottom: 15px;
-            }
-            .toolbar-section:last-child {
-                border-bottom: none;
-            }
-            .editor-area {
-                flex-direction: column;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>图片文字编辑工具</h1>
-        
-        <div class="toolbar">
-            <div class="toolbar-section">
-                <h3>图片上传</h3>
-                <input type="file" id="imageUpload" accept="image/*">
-                <button id="resetCanvas">重置画布</button>
-            </div>
-            
-            <div class="toolbar-section">
-                <h3>添加文本</h3>
-                <label>
-                    文本内容
-                    <input type="text" id="textContent" placeholder="输入文本内容">
-                </label>
-                <label>
-                    字体大小
-                    <input type="number" id="fontSize" value="24" min="8" max="120">
-                </label>
-                <label>
-                    字体颜色
-                    <input type="color" id="fontColor" value="#000000">
-                </label>
-                <label>
-                    背景颜色
-                    <input type="color" id="bgColor" value="#ffffff">
-                </label>
-                <label>
-                    背景透明度
-                    <input type="range" id="bgOpacity" min="0" max="1" step="0.1" value="0">
-                </label>
-                <button id="addText">添加文本</button>
-            </div>
-            
-            <div class="toolbar-section">
-                <h3>模板管理</h3>
-                <label>
-                    模板名称
-                    <input type="text" id="templateName" placeholder="输入模板名称">
-                </label>
-                <button id="saveTemplate" class="success">保存当前模板</button>
-                <button id="exportImage">导出当前图片</button>
-            </div>
-        </div>
-        
-        <div class="editor-area">
-            <div class="canvas-container">
-                <canvas id="canvas"></canvas>
-                <div id="textLayers"></div>
-            </div>
-            
-            <div class="template-container">
-                <h3>已保存模板</h3>
-                <div id="templateList"></div>
-            </div>
-        </div>
-        
-        <div class="batch-container">
-            <h3>批量处理</h3>
-            <input type="file" id="batchUpload" accept="image/*" multiple>
-            <div class="batch-images" id="batchImages"></div>
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <select id="templateSelect" style="flex-grow: 1; padding: 10px;">
-                    <option value="">-- 选择要应用的模板 --</option>
-                </select>
-                <button id="applyToAll" class="success">应用模板到所有图片</button>
-            </div>
-            <button id="exportAll" style="margin-top: 10px; width: 100%;">导出所有图片为ZIP包</button>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <script>
-        // 全局变量
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        let currentImage = null;
-        let textLayers = [];
-        let selectedLayer = null;
-        let templates = JSON.parse(localStorage.getItem('imageTextTemplates')) || [];
-        let batchImages = [];
-        let isDragging = false;
-        let startX, startY, layerX, layerY;
-        
-        // 初始化画布
-        function initCanvas() {
-            canvas.width = 600;
-            canvas.height = 400;
-            ctx.fillStyle = '#f0f0f0';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.font = '20px sans-serif';
-            ctx.fillStyle = '#999';
-            ctx.textAlign = 'center';
-            ctx.fillText('请上传图片', canvas.width / 2, canvas.height / 2);
             
             renderTextLayers();
+            saveToHistory();
         }
         
-        // 加载图片到画布
-        function loadImage(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    currentImage = img;
-                    // 保持画布大小不变，调整图片以适应画布
-                    drawImageOnCanvas();
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        // 在画布上绘制图片
-        function drawImageOnCanvas() {
-            if (!currentImage) return;
+        // 打开编辑模式
+        function openEditMode(layer) {
+            // 将图层数据填入编辑表单
+            document.getElementById('textContent').value = layer.text;
+            document.getElementById('fontSize').value = layer.fontSize;
+            document.getElementById('fontColor').value = layer.color;
+            document.getElementById('bgColor').value = layer.bgColor;
+            document.getElementById('bgOpacity').value = layer.bgOpacity;
             
-            // 调整画布大小以匹配图片大小
-            canvas.width = currentImage.width;
-            canvas.height = currentImage.height;
-            
-            // 绘制图片
-            ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
-            
-            // 重新渲染文本图层
-            renderTextLayers();
-        }
-        
-        // 添加文本图层
-        function addTextLayer(text, x, y, fontSize, color, bgColor, bgOpacity) {
-            const layerId = Date.now().toString();
-            const textLayer = {
-                id: layerId,
-                text,
-                x: x || 50,
-                y: y || 50,
-                fontSize: fontSize || 24,
-                color: color || '#000000',
-                bgColor: bgColor || '#ffffff',
-                bgOpacity: bgOpacity || 0
-            };
-            
-            textLayers.push(textLayer);
-            renderTextLayers();
-            selectLayer(layerId);
-            
-            return textLayer;
-        }
-        
-        // 渲染所有文本图层
-        function renderTextLayers() {
-            const container = document.getElementById('textLayers');
-            container.innerHTML = '';
-            
-            textLayers.forEach(layer => {
-                const layerElement = document.createElement('div');
-                layerElement.className = 'text-layer';
-                layerElement.id = `layer-${layer.id}`;
-                layerElement.style.left = `${layer.x}px`;
-                layerElement.style.top = `${layer.y}px`;
-                layerElement.style.fontSize = `${layer.fontSize}px`;
-                layerElement.style.color = layer.color;
-                
-                // 设置背景色和透明度
-                if (layer.bgOpacity > 0) {
-                    const rgb = hexToRgb(layer.bgColor);
-                    layerElement.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${layer.bgOpacity})`;
-                }
-                
-                layerElement.innerText = layer.text;
-                
-                // 添加选择和拖动事件
-                layerElement.addEventListener('mousedown', (e) => {
-                    selectLayer(layer.id);
-                    startDrag(e, layer);
-                    e.stopPropagation();
-                });
-                
-                layerElement.addEventListener('touchstart', (e) => {
-                    selectLayer(layer.id);
-                    startDragTouch(e, layer);
-                    e.stopPropagation();
-                });
-                
-                container.appendChild(layerElement);
-                
-                // 给选中的图层添加选中样式
-                if (selectedLayer && selectedLayer.id === layer.id) {
-                    layerElement.classList.add('selected');
-                }
-            });
-        }
-        
-        // 选择图层
-        function selectLayer(layerId) {
-            selectedLayer = textLayers.find(layer => layer.id === layerId) || null;
-            renderTextLayers();
-        }
-        
-        // 开始拖动
-        function startDrag(e, layer) {
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            layerX = layer.x;
-            layerY = layer.y;
-            
-            document.addEventListener('mousemove', onDrag);
-            document.addEventListener('mouseup', stopDrag);
-        }
-        
-        // 开始触摸拖动
-        function startDragTouch(e, layer) {
-            if (e.touches.length !== 1) return;
-            
-            isDragging = true;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            layerX = layer.x;
-            layerY = layer.y;
-            
-            document.addEventListener('touchmove', onDragTouch);
-            document.addEventListener('touchend', stopDragTouch);
-        }
-        
-        // 拖动中
-        function onDrag(e) {
-            if (!isDragging || !selectedLayer) return;
-            
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            
-            selectedLayer.x = layerX + dx;
-            selectedLayer.y = layerY + dy;
-            
-            renderTextLayers();
-        }
-        
-        // 触摸拖动中
-        function onDragTouch(e) {
-            if (!isDragging || !selectedLayer || e.touches.length !== 1) return;
-            
-            const dx = e.touches[0].clientX - startX;
-            const dy = e.touches[0].clientY - startY;
-            
-            selectedLayer.x = layerX + dx;
-            selectedLayer.y = layerY + dy;
-            
-            renderTextLayers();
-            e.preventDefault();
-        }
-        
-        // 停止拖动
-        function stopDrag() {
-            isDragging = false;
-            document.removeEventListener('mousemove', onDrag);
-            document.removeEventListener('mouseup', stopDrag);
-        }
-        
-        // 停止触摸拖动
-        function stopDragTouch() {
-            isDragging = false;
-            document.removeEventListener('touchmove', onDragTouch);
-            document.removeEventListener('touchend', stopDragTouch);
-        }
-        
-        // 保存模板
-        function saveTemplate() {
-            const name = document.getElementById('templateName').value.trim() || `模板 ${templates.length + 1}`;
-            
-            // 创建缩略图
-            const thumbnailCanvas = document.createElement('canvas');
-            thumbnailCanvas.width = 100;
-            thumbnailCanvas.height = 100;
-            const thumbnailCtx = thumbnailCanvas.getContext('2d');
-            
-            // 如果有图片，绘制缩略图
-            if (currentImage) {
-                const ratio = Math.min(100 / currentImage.width, 100 / currentImage.height);
-                const width = currentImage.width * ratio;
-                const height = currentImage.height * ratio;
-                const x = (100 - width) / 2;
-                const y = (100 - height) / 2;
-                
-                thumbnailCtx.drawImage(currentImage, x, y, width, height);
-            } else {
-                thumbnailCtx.fillStyle = '#f0f0f0';
-                thumbnailCtx.fillRect(0, 0, 100, 100);
-            }
-            
-            const template = {
-                id: Date.now().toString(),
-                name,
-                textLayers: JSON.parse(JSON.stringify(textLayers)),
-                thumbnail: thumbnailCanvas.toDataURL()
-            };
-            
-            templates.push(template);
-            localStorage.setItem('imageTextTemplates', JSON.stringify(templates));
-            
-            renderTemplateList();
-            alert(`模板 "${name}" 已保存`);
-        }
-        
-        // 应用模板
-        function applyTemplate(templateId) {
-            const template = templates.find(t => t.id === templateId);
-            if (!template) return;
-            
-            textLayers = JSON.parse(JSON.stringify(template.textLayers));
-            renderTextLayers();
-        }
-        
-        // 删除模板
-        function deleteTemplate(templateId) {
-            if (!confirm('确定要删除这个模板吗？')) return;
-            
-            templates = templates.filter(t => t.id !== templateId);
-            localStorage.setItem('imageTextTemplates', JSON.stringify(templates));
-            renderTemplateList();
-        }
-        
-        // 渲染模板列表
-        function renderTemplateList() {
-            const container = document.getElementById('templateList');
-            container.innerHTML = '';
-            
-            // 更新模板下拉选择框
-            const templateSelect = document.getElementById('templateSelect');
-            templateSelect.innerHTML = '<option value="">-- 选择要应用的模板 --</option>';
-            
-            if (templates.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: #999;">暂无保存的模板</div>';
-                return;
-            }
-            
-            templates.forEach(template => {
-                // 添加到模板列表
-                const item = document.createElement('div');
-                item.className = 'template-item';
-                
-                const preview = document.createElement('div');
-                preview.className = 'template-preview';
-                const img = document.createElement('img');
-                img.src = template.thumbnail;
-                preview.appendChild(img);
-                
-                const name = document.createElement('div');
-                name.textContent = template.name;
-                
-                const buttons = document.createElement('div');
-                buttons.className = 'template-buttons';
-                
-                const applyButton = document.createElement('button');
-                applyButton.textContent = '应用';
-                applyButton.onclick = () => applyTemplate(template.id);
-                
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = '删除';
-                deleteButton.className = 'danger';
-                deleteButton.onclick = () => deleteTemplate(template.id);
-                
-                buttons.appendChild(applyButton);
-                buttons.appendChild(deleteButton);
-                
-                item.appendChild(preview);
-                item.appendChild(name);
-                item.appendChild(buttons);
-                container.appendChild(item);
-                
-                // 添加到下拉选择框
-                const option = document.createElement('option');
-                option.value = template.id;
-                option.textContent = template.name;
-                templateSelect.appendChild(option);
-            });
-        }
-        
-        // 添加批量图片
-        function addBatchImage(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    batchImages.push({
-                        id: Date.now().toString(),
-                        img: img,
-                        src: e.target.result
-                    });
-                    renderBatchImages();
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        // 渲染批量图片列表
-        function renderBatchImages() {
-            const container = document.getElementById('batchImages');
-            container.innerHTML = '';
-            
-            batchImages.forEach(item => {
-                const imageItem = document.createElement('div');
-                imageItem.className = 'batch-image-item';
-                
-                const img = document.createElement('img');
-                img.src = item.src;
-                
-                const removeButton = document.createElement('button');
-                removeButton.className = 'remove-button';
-                removeButton.textContent = '×';
-                removeButton.onclick = () => {
-                    batchImages = batchImages.filter(i => i.id !== item.id);
-                    renderBatchImages();
-                };
-                
-                imageItem.appendChild(img);
-                imageItem.appendChild(removeButton);
-                container.appendChild(imageItem);
-            });
-        }
-        
-        // 将选定模板应用到所有批量图片
-        function applyTemplateToAll() {
-            if (batchImages.length === 0) {
-                alert('请先添加批量处理的图片');
-                return;
-            }
-            
-            const templateSelect = document.getElementById('templateSelect');
-            const selectedTemplateId = templateSelect.value;
-            
-            if (!selectedTemplateId) {
-                // 如果没有选择模板但有当前文本图层，使用当前文本图层
-                if (textLayers.length === 0) {
-                    alert('请先选择一个模板或添加文本');
-                    return;
-                }
-                
-                alert(`当前文本设置将应用到 ${batchImages.length} 张图片`);
-            } else {
-                // 应用选定的模板
-                const template = templates.find(t => t.id === selectedTemplateId);
-                if (template) {
-                    textLayers = JSON.parse(JSON.stringify(template.textLayers));
-                    renderTextLayers();
-                    alert(`模板 "${template.name}" 将应用到 ${batchImages.length} 张图片`);
-                }
-            }
-        }
-        
-        // 导出当前图片
-        function exportImage() {
-            if (!currentImage) {
-                alert('请先上传图片');
-                return;
-            }
-            
-            // 创建一个离屏画布
-            const exportCanvas = document.createElement('canvas');
-            exportCanvas.width = canvas.width;
-            exportCanvas.height = canvas.height;
-            const exportCtx = exportCanvas.getContext('2d');
-            
-            // 绘制背景图片
-            exportCtx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
-            
-            // 绘制文本图层
-            textLayers.forEach(layer => {
-                exportCtx.font = `${layer.fontSize}px sans-serif`;
-                exportCtx.fillStyle = layer.color;
-                
-                // 绘制背景
-                if (layer.bgOpacity > 0) {
-                    const textWidth = exportCtx.measureText(layer.text).width;
-                    const textHeight = layer.fontSize * 1.2;
-                    const rgb = hexToRgb(layer.bgColor);
-                    
-                    exportCtx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${layer.bgOpacity})`;
-                    exportCtx.fillRect(layer.x, layer.y - layer.fontSize * 0.8, textWidth, textHeight);
-                    exportCtx.fillStyle = layer.color;
-                }
-                
-                exportCtx.fillText(layer.text, layer.x, layer.y);
-            });
-            
-            // 导出为图片
-            const dataURL = exportCanvas.toDataURL('image/png');
-            
-            // 创建下载链接
-            const link = document.createElement('a');
-            link.download = 'image-with-text.png';
-            link.href = dataURL;
-            link.click();
-        }
-        
-        // 导出所有批量图片为ZIP包
-        function exportAllImages() {
-            if (batchImages.length === 0) {
-                alert('请先添加批量处理的图片');
-                return;
-            }
-            
-            if (textLayers.length === 0) {
-                alert('请先添加文本或应用模板');
-                return;
-            }
-            
-            // 创建加载提示
-            const loading = document.createElement('div');
-            loading.className = 'loading';
-            loading.innerHTML = '<div class="loading-spinner"></div><div style="margin-top: 10px;">处理中...</div>';
-            document.body.appendChild(loading);
-            
-            // 创建ZIP文件
-            const zip = new JSZip();
-            const imgFolder = zip.folder("处理后图片");
-            let processedCount = 0;
-            
-            // 处理每张图片
-            batchImages.forEach((item, index) => {
-                // 创建一个离屏画布
-                const exportCanvas = document.createElement('canvas');
-                exportCanvas.width = item.img.width;
-                exportCanvas.height = item.img.height;
-                const exportCtx = exportCanvas.getContext('2d');
-                
-                // 绘制背景图片
-                exportCtx.drawImage(item.img, 0, 0, item.img.width, item.img.height);
-                
-                // 绘制文本图层
-                textLayers.forEach(layer => {
-                    exportCtx.font = `${layer.fontSize}px sans-serif`;
-                    exportCtx.fillStyle = layer.color;
-                    
-                    // 绘制背景
-                    if (layer.bgOpacity > 0) {
-                        const textWidth = exportCtx.measureText(layer.text).width;
-                        const textHeight = layer.fontSize * 1.2;
-                        const rgb = hexToRgb(layer.bgColor);
-                        
-                        exportCtx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${layer.bgOpacity})`;
-                        exportCtx.fillRect(layer.x, layer.y - layer.fontSize * 0.8, textWidth, textHeight);
-                        exportCtx.fillStyle = layer.color;
+            // 选择对应的字体和特效
+            if (layer.fontFamily) {
+                const fontSelect = document.getElementById('fontFamily');
+                for (let i = 0; i < fontSelect.options.length; i++) {
+                    if (fontSelect.options[i].value === layer.fontFamily) {
+                        fontSelect.selectedIndex = i;
+                        break;
                     }
-                    
-                    exportCtx.fillText(layer.text, layer.x, layer.y);
-                });
-                
-                // 转换为图片数据
-                exportCanvas.toBlob(blob => {
-                    // 添加到ZIP文件
-                    const fileName = `image_${index + 1}.png`;
-                    imgFolder.file(fileName, blob);
-                    
-                    processedCount++;
-                    
-                    // 当所有图片都处理完成后生成并下载ZIP文件
-                    if (processedCount === batchImages.length) {
-                        zip.generateAsync({type: "blob"}).then(function(content) {
-                            saveAs(content, "processed_images.zip");
-                            document.body.removeChild(loading);
-                            alert('导出完成！图片已打包为ZIP文件');
-                        });
+                }
+            }
+            
+            if (layer.textEffect) {
+                const effectSelect = document.getElementById('textEffect');
+                for (let i = 0; i < effectSelect.options.length; i++) {
+                    if (effectSelect.options[i].value === layer.textEffect) {
+                        effectSelect.selectedIndex = i;
+                        break;
                     }
-                }, 'image/png');
-            });
-        }
-        
-        // 辅助函数：十六进制颜色转RGB
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
-            } : {r: 0, g: 0, b: 0};
-        }
-        
-        // 事件监听
-        document.getElementById('imageUpload').addEventListener('change', (e) => {
-            if (e.target.files && e.target.files[0]) {
-                loadImage(e.target.files[0]);
-            }
-        });
-        
-        document.getElementById('resetCanvas').addEventListener('click', () => {
-            textLayers = [];
-            selectedLayer = null;
-            initCanvas();
-        });
-        
-        document.getElementById('addText').addEventListener('click', () => {
-            const text = document.getElementById('textContent').value.trim();
-            if (!text) {
-                alert('请输入文本内容');
-                return;
+                }
             }
             
-            const fontSize = parseInt(document.getElementById('fontSize').value) || 24;
-            const color = document.getElementById('fontColor').value;
-            const bgColor = document.getElementById('bgColor').value;
-            const bgOpacity = parseFloat(document.getElementById('bgOpacity').value);
+            // 更新预览
+            updateTextPreview();
             
-            addTextLayer(text, 50, 50, fontSize, color, bgColor, bgOpacity);
-        });
-        
-        document.getElementById('saveTemplate').addEventListener('click', saveTemplate);
-        document.getElementById('exportImage').addEventListener('click', exportImage);
-        
-        document.getElementById('batchUpload').addEventListener('change', (e) => {
-            if (e.target.files) {
-                Array.from(e.target.files).forEach(file => {
-                    addBatchImage(file);
-                });
-            }
-        });
-        
-        document.getElementById('applyToAll').addEventListener('click', applyTemplateToAll);
-        document.getElementById('exportAll').addEventListener('click', exportAllImages);
-        
-        // 点击画布区域取消选择
-        document.querySelector('.canvas-container').addEventListener('click', (e) => {
-            if (e.target === canvas || e.target.classList.contains('canvas-container')) {
-                selectedLayer = null;
-                renderTextLayers();
-            }
-        });
-        
-        // 页面加载完成后初始化
-        window.addEventListener('load', () => {
-            initCanvas();
-            renderTemplateList();
-        });
-    </script>
-</body>
-</html>
+            // 删除旧图层并创建新图层
+            document.getElementById('addText').innerText = '更新文本';
+            document.getElementById('addText').onclick = function() {
+                // 保存原始位置
+                const originalX = layer.x;
