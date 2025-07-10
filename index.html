@@ -3,1524 +3,607 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图片文字编辑工具</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@400;700&family=ZCOOL+KuaiLe&family=ZCOOL+QingKe+HuangYou&family=ZCOOL+XiaoWei&family=Zhi+Mang+Xing&family=Long+Cang&family=Liu+Jian+Mao+Cao&family=ZCOOL+XiaoWei&family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+JP&family=Noto+Serif+JP&family=Noto+Sans+KR&family=Noto+Serif+KR&display=swap" rel="stylesheet">
+    <title>图片视频链接批量解析</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
+
         body {
-            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             padding: 20px;
         }
+
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
         }
+
         h1 {
             text-align: center;
-            margin-bottom: 20px;
-            color: #2c3e50;
-        }
-        .toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            padding: 15px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        .toolbar-section {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 10px;
-            border-right: 1px solid #eee;
-            min-width: 200px;
-        }
-        .toolbar-section:last-child {
-            border-right: none;
-        }
-        .toolbar-section h3 {
-            margin-bottom: 10px;
-            font-size: 16px;
-            color: #2c3e50;
-        }
-        label {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            font-size: 14px;
-        }
-        input, select, button {
-            padding: 8px 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            cursor: pointer;
-            border: none;
-            padding: 10px 15px;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        button.danger {
-            background-color: #e74c3c;
-        }
-        button.danger:hover {
-            background-color: #c0392b;
-        }
-        button.success {
-            background-color: #2ecc71;
-        }
-        button.success:hover {
-            background-color: #27ae60;
-        }
-        /* 撤销/重做按钮样式 */
-        .history-controls {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .history-controls button {
-            flex: 1;
-            font-size: 13px;
-            padding: 6px 8px;
-        }
-        .history-controls button:disabled {
-            background-color: #bdc3c7;
-            cursor: not-allowed;
-        }
-        
-        .editor-area {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        .canvas-container {
-            position: relative;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            flex: 1;
-            min-width: 300px;
-            min-height: 400px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        #canvas {
-            max-width: 100%;
-            max-height: 100%;
-            display: block;
-            background-color: #f0f0f0;
-        }
-        .template-container {
-            flex: 0 0 300px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            max-height: 600px;
-            overflow-y: auto;
-        }
-        .template-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            border: 1px solid #eee;
-            border-radius: 4px;
-        }
-        .template-item:hover {
-            background-color: #f9f9f9;
-        }
-        .template-buttons {
-            display: flex;
-            gap: 5px;
-        }
-        .template-preview {
-            width: 50px;
-            height: 50px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .template-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .text-layer {
-            position: absolute;
-            cursor: move;
-            padding: 5px;
-            border: 2px dashed transparent;
-            user-select: none;
-        }
-        .text-layer.selected {
-            border: 2px dashed #3498db;
-        }
-        
-        /* 文本图层删除按钮 */
-        .layer-delete-btn {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            width: 20px;
-            height: 20px;
-            background-color: #e74c3c;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-            opacity: 1; /* 始终显示删除按钮 */
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            line-height: 1;
-            pointer-events: auto; /* 确保可以点击 */
-        }
-        .layer-delete-btn:hover {
-            background-color: #c0392b;
-            transform: scale(1.1);
-        }
-        
-        /* 文本预览区域 */
-        .text-preview {
-            margin-top: 10px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            min-height: 60px;
-            background-color: #f9f9f9;
-        }
-        
-        /* 文本特效样式 */
-        .text-effect-shadow {
-            text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.5);
-        }
-        .text-effect-outline {
-            -webkit-text-stroke: 1px #000;
-            text-stroke: 1px #000;
-            color: white;
-        }
-        .text-effect-gradient {
-            background: linear-gradient(45deg, #f06, #9f6, #06f, #f06);
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
             -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             background-clip: text;
-            color: transparent;
-            animation: gradient-shift 6s linear infinite;
         }
-        .text-effect-glow {
-            text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #e60073, 0 0 40px #e60073, 0 0 50px #e60073;
+
+        .input-section {
+            margin-bottom: 30px;
         }
-        .text-effect-3d {
-            text-shadow: 0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0 #b9b9b9, 0 5px 0 #aaa, 0 6px 1px rgba(0,0,0,.1), 0 0 5px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.3), 0 3px 5px rgba(0,0,0,.2), 0 5px 10px rgba(0,0,0,.25), 0 10px 10px rgba(0,0,0,.2), 0 20px 20px rgba(0,0,0,.15);
+
+        .input-section label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #555;
         }
-        
-        @keyframes gradient-shift {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 200% 50%; }
-        }
-        .batch-container {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            margin-top: 20px;
-        }
-        .batch-images {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .batch-image-item {
-            position: relative;
-            width: 100px;
-            height: 100px;
-        }
-        .batch-image-item img {
+
+        .url-input {
             width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 14px;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: #fafafa;
+            font-family: 'Courier New', monospace;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            background: white;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #6c757d;
+            border: 2px solid #e9ecef;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .progress-section {
+            margin-bottom: 30px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
             height: 100%;
-            object-fit: cover;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
             border-radius: 4px;
         }
-        .batch-image-item .remove-button {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background-color: #e74c3c;
+
+        .progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .log-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+        }
+
+        .log-item {
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .log-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .log-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .log-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .log-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .icon-success { background: #28a745; }
+        .icon-error { background: #dc3545; }
+        .icon-info { background: #17a2b8; }
+        .icon-warning { background: #ffc107; }
+
+        .hidden {
+            display: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .download-links {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .download-link {
+            display: block;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #495057;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .download-link:hover {
+            background: #e9ecef;
+            text-decoration: none;
+        }
+
+        .copy-btn {
+            background: #17a2b8;
             color: white;
             border: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 10px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
             cursor: pointer;
-            font-size: 12px;
-            line-height: 1;
-            padding: 0;
-        }
-        .loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .loading-spinner {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        @media (max-width: 768px) {
-            .toolbar {
-                flex-direction: column;
-            }
-            .toolbar-section {
-                border-right: none;
-                border-bottom: 1px solid #eee;
-                padding-bottom: 15px;
-            }
-            .toolbar-section:last-child {
-                border-bottom: none;
-            }
-            .editor-area {
-                flex-direction: column;
-            }
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>图片文字编辑工具</h1>
+        <h1>📱 图片视频链接批量解析</h1>
         
-        <div class="toolbar">
-            <div class="toolbar-section">
-                <h3>图片上传</h3>
-                <input type="file" id="imageUpload" accept="image/*">
-                <button id="resetCanvas">重置画布</button>
-                
-                <!-- 新增：撤销/重做按钮 -->
-                <h3 style="margin-top: 15px;">操作历史</h3>
-                <div class="history-controls">
-                    <button id="undoBtn" disabled>撤销</button>
-                    <button id="redoBtn" disabled>重做</button>
+        <div class="input-section">
+            <label for="urlInput">粘贴链接（每行一个）：</label>
+            <textarea 
+                id="urlInput" 
+                class="url-input" 
+                placeholder="请粘贴图片或视频链接，支持：&#10;• 小红书视频/图片链接&#10;• 抖音视频链接&#10;• 其他直链媒体文件&#10;&#10;多个链接请换行分隔"
+            ></textarea>
+        </div>
+
+        <div class="button-group">
+            <button id="downloadBtn" class="btn btn-primary">
+                🚀 开始处理
+            </button>
+            <button id="clearBtn" class="btn btn-secondary">
+                🗑️ 清空
+            </button>
+        </div>
+
+        <div id="progressSection" class="progress-section hidden">
+            <div class="stats">
+                <div class="stat-card">
+                    <div id="totalCount" class="stat-number">0</div>
+                    <div class="stat-label">总数</div>
+                </div>
+                <div class="stat-card">
+                    <div id="successCount" class="stat-number">0</div>
+                    <div class="stat-label">成功</div>
+                </div>
+                <div class="stat-card">
+                    <div id="errorCount" class="stat-number">0</div>
+                    <div class="stat-label">失败</div>
+                </div>
+                <div class="stat-card">
+                    <div id="currentProgress" class="stat-number">0%</div>
+                    <div class="stat-label">进度</div>
                 </div>
             </div>
-            
-            <div class="toolbar-section">
-                <h3>添加文本</h3>
-                <label>
-                    文本内容
-                    <input type="text" id="textContent" placeholder="输入文本内容">
-                </label>
-                <label>
-                    字体选择
-                    <select id="fontFamily">
-                        <option value="'Noto Sans SC', sans-serif">默认无衬线</option>
-                        <option value="'Noto Serif SC', serif">默认衬线</option>
-                        <option value="'Ma Shan Zheng', cursive">马善政</option>
-                        <option value="'ZCOOL KuaiLe', sans-serif">站酷快乐</option>
-                        <option value="'ZCOOL QingKe HuangYou', sans-serif">站酷青柯黄油</option>
-                        <option value="'ZCOOL XiaoWei', serif">站酷小薇</option>
-                        <option value="'Zhi Mang Xing', cursive">智芒星</option>
-                        <option value="'Long Cang', cursive">长仓</option>
-                        <option value="'Liu Jian Mao Cao', cursive">柳荐毛草</option>
-                        <!-- 新增字体选项 -->
-                        <option value="'Noto Sans TC', sans-serif">繁体无衬线</option>
-                        <option value="'Noto Serif TC', serif">繁体衬线</option>
-                        <option value="'Noto Sans JP', sans-serif">日文无衬线</option>
-                        <option value="'Noto Serif JP', serif">日文衬线</option>
-                        <option value="'Noto Sans KR', sans-serif">韩文无衬线</option>
-                        <option value="'Noto Serif KR', serif">韩文衬线</option>
-                        <option value="'Microsoft YaHei', sans-serif">微软雅黑</option>
-                        <option value="'SimSun', serif">宋体</option>
-                        <option value="'SimHei', sans-serif">黑体</option>
-                        <option value="'KaiTi', serif">楷体</option>
-                        <option value="'FangSong', serif">仿宋</option>
-                    </select>
-                </label>
-                <label>
-                    字体大小
-                    <input type="number" id="fontSize" value="24" min="8" max="120">
-                </label>
-                <label>
-                    字体颜色
-                    <input type="color" id="fontColor" value="#000000">
-                </label>
-                <label>
-                    特效样式
-                    <select id="textEffect">
-                        <option value="none">无特效</option>
-                        <option value="shadow">阴影效果</option>
-                        <option value="outline">描边效果</option>
-                        <option value="gradient">渐变效果</option>
-                        <option value="glow">发光效果</option>
-                        <option value="3d">3D效果</option>
-                    </select>
-                </label>
-                <label>
-                    背景颜色
-                    <input type="color" id="bgColor" value="#ffffff">
-                </label>
-                <label>
-                    背景透明度
-                    <input type="range" id="bgOpacity" min="0" max="1" step="0.1" value="0">
-                </label>
-                
-                <!-- 新增：文本预览区域 -->
-                <div class="text-preview" id="textPreview">
-                    文字预览区域
-                </div>
-                
-                <button id="addText">添加文本</button>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
             </div>
-            
-            <div class="toolbar-section">
-                <h3>模板管理</h3>
-                <label>
-                    模板名称
-                    <input type="text" id="templateName" placeholder="输入模板名称">
-                </label>
-                <button id="saveTemplate" class="success">保存当前模板</button>
-                <button id="exportImage">导出当前图片</button>
-            </div>
+            <div id="progressText" class="progress-text">准备开始...</div>
         </div>
-        
-        <div class="editor-area">
-            <div class="canvas-container">
-                <canvas id="canvas"></canvas>
-                <div id="textLayers"></div>
+
+        <div class="log-section">
+            <div id="logContainer"></div>
+            <div id="downloadLinks" class="download-links hidden">
+                <strong>📥 下载链接：</strong>
+                <div id="linkContainer"></div>
             </div>
-            
-            <div class="template-container">
-                <h3>已保存模板</h3>
-                <div id="templateList"></div>
-            </div>
-        </div>
-        
-        <div class="batch-container">
-            <h3>批量处理</h3>
-            <input type="file" id="batchUpload" accept="image/*" multiple>
-            <div class="batch-images" id="batchImages"></div>
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <select id="templateSelect" style="flex-grow: 1; padding: 10px;">
-                    <option value="">-- 选择要应用的模板 --</option>
-                </select>
-                <button id="applyToAll" class="success">应用模板到所有图片</button>
-            </div>
-            <button id="exportAll" style="margin-top: 10px; width: 100%;">导出所有图片为ZIP包</button>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
-        // 全局变量
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        let currentImage = null;
-        let textLayers = [];
-        let selectedLayer = null;
-        let templates = JSON.parse(localStorage.getItem('imageTextTemplates')) || [];
-        let batchImages = [];
-        let isDragging = false;
-        let startX, startY, layerX, layerY;
-        
-        // 新增：历史记录相关变量
-        let history = [];
-        let historyIndex = -1;
-        let isUndoingRedoing = false; // 防止撤销/重做操作触发历史记录
+        class MediaParser {
+            constructor() {
+                this.downloadBtn = document.getElementById('downloadBtn');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.urlInput = document.getElementById('urlInput');
+                this.progressSection = document.getElementById('progressSection');
+                this.progressFill = document.getElementById('progressFill');
+                this.progressText = document.getElementById('progressText');
+                this.logContainer = document.getElementById('logContainer');
+                this.downloadLinks = document.getElementById('downloadLinks');
+                this.linkContainer = document.getElementById('linkContainer');
+                
+                this.totalCount = document.getElementById('totalCount');
+                this.successCount = document.getElementById('successCount');
+                this.errorCount = document.getElementById('errorCount');
+                this.currentProgress = document.getElementById('currentProgress');
+                
+                this.isProcessing = false;
+                this.stats = { total: 0, success: 0, error: 0 };
+                
+                this.initEvents();
+            }
 
-        // 初始化画布
-        function initCanvas() {
-            canvas.width = 600;
-            canvas.height = 400;
-            ctx.fillStyle = '#f0f0f0';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.font = '20px sans-serif';
-            ctx.fillStyle = '#999';
-            ctx.textAlign = 'center';
-            ctx.fillText('请上传图片', canvas.width / 2, canvas.height / 2);
-            
-            textLayers = [];
-            selectedLayer = null;
-            
-            // 新增：重置历史记录
-            history = [];
-            historyIndex = -1;
-            updateHistoryButtons();
-            
-            renderTextLayers();
-            
-            // 更新文本预览
-            updateTextPreview();
-        }
-        
-        // 加载图片到画布
-        function loadImage(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    currentImage = img;
-                    // 保持画布大小不变，调整图片以适应画布
-                    drawImageOnCanvas();
+            initEvents() {
+                this.downloadBtn.addEventListener('click', () => this.startProcess());
+                this.clearBtn.addEventListener('click', () => this.clearAll());
+            }
+
+            log(message, type = 'info') {
+                const logItem = document.createElement('div');
+                logItem.className = `log-item log-${type} fade-in`;
+                
+                const icon = document.createElement('span');
+                icon.className = `status-icon icon-${type}`;
+                
+                const text = document.createElement('span');
+                text.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                
+                logItem.appendChild(icon);
+                logItem.appendChild(text);
+                
+                this.logContainer.appendChild(logItem);
+                this.logContainer.scrollTop = this.logContainer.scrollHeight;
+            }
+
+            clearAll() {
+                this.logContainer.innerHTML = '';
+                this.linkContainer.innerHTML = '';
+                this.progressSection.classList.add('hidden');
+                this.downloadLinks.classList.add('hidden');
+                this.stats = { total: 0, success: 0, error: 0 };
+                this.updateStats();
+            }
+
+            updateStats() {
+                this.totalCount.textContent = this.stats.total;
+                this.successCount.textContent = this.stats.success;
+                this.errorCount.textContent = this.stats.error;
+                
+                const progress = this.stats.total > 0 ? 
+                    Math.round(((this.stats.success + this.stats.error) / this.stats.total) * 100) : 0;
+                this.currentProgress.textContent = `${progress}%`;
+                
+                this.progressFill.style.width = `${progress}%`;
+                this.progressText.textContent = 
+                    `已处理 ${this.stats.success + this.stats.error} / ${this.stats.total} 个文件`;
+            }
+
+            getUrls() {
+                return this.urlInput.value.trim().split('\n')
+                    .map(url => url.trim())
+                    .filter(url => url.length > 0);
+            }
+
+            async startProcess() {
+                if (this.isProcessing) return;
+                
+                const urls = this.getUrls();
+                if (urls.length === 0) {
+                    this.log('请输入至少一个链接', 'error');
+                    return;
+                }
+
+                this.isProcessing = true;
+                this.downloadBtn.disabled = true;
+                this.downloadBtn.textContent = '⏳ 处理中...';
+                
+                this.progressSection.classList.remove('hidden');
+                this.stats = { total: urls.length, success: 0, error: 0 };
+                this.updateStats();
+                
+                this.log(`开始处理 ${urls.length} 个链接`, 'info');
+                
+                const zip = new JSZip();
+                
+                for (let i = 0; i < urls.length; i++) {
+                    const url = urls[i];
+                    await this.processUrl(url, zip);
+                }
+                
+                if (this.stats.success > 0) {
+                    if (this.stats.success === 1 && urls.length === 1) {
+                        this.log('文件处理完成', 'success');
+                    } else {
+                        this.log('正在生成压缩包...', 'info');
+                        const content = await zip.generateAsync({ type: 'blob' });
+                        const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                        this.saveFile(content, `媒体文件_${timestamp}.zip`);
+                        this.log(`压缩包已生成，包含 ${this.stats.success} 个文件`, 'success');
+                    }
+                }
+                
+                this.isProcessing = false;
+                this.downloadBtn.disabled = false;
+                this.downloadBtn.textContent = '🚀 开始处理';
+                
+                this.log(`处理完成！成功: ${this.stats.success}, 失败: ${this.stats.error}`, 'info');
+            }
+
+            async processUrl(url, zip) {
+                const filename = this.getFilename(url);
+                
+                try {
+                    // 方法1: 直接下载
+                    let blob = await this.tryDirectDownload(url);
                     
-                    // 新增：保存到历史记录
-                    saveToHistory();
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        // 在画布上绘制图片
-        function drawImageOnCanvas() {
-            if (!currentImage) return;
-            
-            // 调整画布大小以匹配图片大小
-            canvas.width = currentImage.width;
-            canvas.height = currentImage.height;
-            
-            // 绘制图片
-            ctx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
-            
-            // 重新渲染文本图层
-            renderTextLayers();
-        }
-        
-        // 添加文本图层
-        function addTextLayer(text, x, y, fontSize, color, bgColor, bgOpacity, fontFamily, textEffect) {
-            console.log("添加文本图层:", text);
-            
-            try {
-                // 生成唯一ID
-                const layerId = Date.now().toString() + Math.floor(Math.random() * 1000);
+                    if (!blob) {
+                        // 方法2: 使用代理
+                        blob = await this.tryProxyDownload(url);
+                    }
+                    
+                    if (blob) {
+                        if (this.stats.total === 1) {
+                            this.saveFile(blob, filename);
+                        } else {
+                            zip.file(filename, blob);
+                        }
+                        this.stats.success++;
+                        this.log(`✅ ${filename} 下载成功`, 'success');
+                    } else {
+                        // 方法3: 生成下载链接
+                        this.createDownloadLink(url, filename);
+                        this.stats.success++;
+                        this.log(`📋 ${filename} 已生成下载链接`, 'warning');
+                    }
+                } catch (error) {
+                    this.stats.error++;
+                    this.log(`❌ ${filename} 处理失败: ${error.message}`, 'error');
+                } finally {
+                    this.updateStats();
+                }
+            }
+
+            async tryDirectDownload(url) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                            'Referer': this.getReferer(url),
+                            'Accept': '*/*',
+                            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                            'Cache-Control': 'no-cache'
+                        },
+                        mode: 'cors'
+                    });
+                    
+                    if (response.ok) {
+                        return await response.blob();
+                    }
+                    return null;
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            async tryProxyDownload(url) {
+                const proxies = [
+                    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+                    `https://cors-anywhere.herokuapp.com/${url}`,
+                    `https://proxy.cors.sh/${url}`
+                ];
                 
-                // 创建新图层
-                const textLayer = {
-                    id: layerId,
-                    text,
-                    x: x || 50,
-                    y: y || 50,
-                    fontSize: fontSize || 24,
-                    color: color || '#000000',
-                    bgColor: bgColor || '#ffffff',
-                    bgOpacity: bgOpacity || 0,
-                    fontFamily: fontFamily || "'Noto Sans SC', sans-serif",
-                    textEffect: textEffect || 'none'
-                };
-                
-                // 保存添加前的状态（用于撤销）
-                saveToHistory();
-                
-                // 添加到图层数组
-                textLayers.push(textLayer);
-                
-                // 选中新添加的图层
-                selectLayer(layerId);
-                
-                // 重新渲染所有图层
-                renderTextLayers();
-                
-                console.log("文本图层添加成功，ID:", layerId);
-                return textLayer;
-            } catch (error) {
-                console.error("添加文本图层时出错:", error);
+                for (const proxyUrl of proxies) {
+                    try {
+                        const response = await fetch(proxyUrl, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            return await response.blob();
+                        }
+                    } catch (error) {
+                        continue;
+                    }
+                }
                 return null;
             }
-        }
-        
-        // 渲染所有文本图层
-        function renderTextLayers() {
-            const container = document.getElementById('textLayers');
-            container.innerHTML = '';
-            
-            textLayers.forEach(layer => {
-                const layerElement = document.createElement('div');
-                layerElement.className = 'text-layer';
-                layerElement.id = `layer-${layer.id}`;
-                layerElement.style.left = `${layer.x}px`;
-                layerElement.style.top = `${layer.y}px`;
-                layerElement.style.fontSize = `${layer.fontSize}px`;
-                layerElement.style.color = layer.color;
-                layerElement.style.fontFamily = layer.fontFamily || "'Noto Sans SC', sans-serif";
-                
-                // 设置背景色和透明度
-                if (layer.bgOpacity > 0) {
-                    const rgb = hexToRgb(layer.bgColor);
-                    layerElement.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${layer.bgOpacity})`;
+
+            createDownloadLink(url, filename) {
+                if (this.downloadLinks.classList.contains('hidden')) {
+                    this.downloadLinks.classList.remove('hidden');
                 }
                 
-                // 添加文本特效类
-                if (layer.textEffect && layer.textEffect !== 'none') {
-                    layerElement.classList.add(`text-effect-${layer.textEffect}`);
+                const linkDiv = document.createElement('div');
+                linkDiv.innerHTML = `
+                    <a href="${url}" target="_blank" class="download-link" download="${filename}">
+                        📥 ${filename}
+                    </a>
+                    <button class="copy-btn" onclick="navigator.clipboard.writeText('${url}')">复制</button>
+                `;
+                this.linkContainer.appendChild(linkDiv);
+            }
+
+            getReferer(url) {
+                if (url.includes('xhscdn.com') || url.includes('xiaohongshu.com')) {
+                    return 'https://www.xiaohongshu.com/';
+                } else if (url.includes('douyin.com') || url.includes('aweme.com')) {
+                    return 'https://www.douyin.com/';
                 }
-                
-                layerElement.innerText = layer.text;
-                
-                // 添加选择和拖动事件
-                layerElement.addEventListener('mousedown', (e) => {
-                    selectLayer(layer.id);
-                    startDrag(e, layer);
-                    e.stopPropagation();
-                });
-                
-                layerElement.addEventListener('touchstart', (e) => {
-                    selectLayer(layer.id);
-                    startDragTouch(e, layer);
-                    e.stopPropagation();
-                });
-                
-                // 新增：双击编辑文本
-                layerElement.addEventListener('dblclick', (e) => {
-                    editLayer(layer);
-                    e.stopPropagation();
-                });
-                
-                // 新增：删除按钮
-                const deleteBtn = document.createElement('div');
-                deleteBtn.className = 'layer-delete-btn';
-                deleteBtn.innerHTML = '×';
-                deleteBtn.style.lineHeight = '1';
-                deleteBtn.addEventListener('click', (e) => {
-                    if (confirm('确定要删除这个文本图层吗？')) {
-                        deleteLayer(layer.id);
-                    }
-                    e.stopPropagation();
-                });
-                
-                layerElement.appendChild(deleteBtn);
-                container.appendChild(layerElement);
-                
-                // 给选中的图层添加选中样式
-                if (selectedLayer && selectedLayer.id === layer.id) {
-                    layerElement.classList.add('selected');
-                }
-            });
-        }
-        
-        // 选择图层
-        function selectLayer(layerId) {
-            selectedLayer = textLayers.find(layer => layer.id === layerId) || null;
-            renderTextLayers();
-        }
-        
-        // 开始拖动
-        function startDrag(e, layer) {
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            layerX = layer.x;
-            layerY = layer.y;
-            
-            document.addEventListener('mousemove', onDrag);
-            document.addEventListener('mouseup', stopDrag);
-        }
-        
-        // 开始触摸拖动
-        function startDragTouch(e, layer) {
-            if (e.touches.length !== 1) return;
-            
-            isDragging = true;
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-            layerX = layer.x;
-            layerY = layer.y;
-            
-            document.addEventListener('touchmove', onDragTouch);
-            document.addEventListener('touchend', stopDragTouch);
-        }
-        
-        // 拖动中
-        function onDrag(e) {
-            if (!isDragging || !selectedLayer) return;
-            
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            
-            selectedLayer.x = layerX + dx;
-            selectedLayer.y = layerY + dy;
-            
-            renderTextLayers();
-        }
-        
-        // 触摸拖动中
-        function onDragTouch(e) {
-            if (!isDragging || !selectedLayer || e.touches.length !== 1) return;
-            
-            const dx = e.touches[0].clientX - startX;
-            const dy = e.touches[0].clientY - startY;
-            
-            selectedLayer.x = layerX + dx;
-            selectedLayer.y = layerY + dy;
-            
-            renderTextLayers();
-            e.preventDefault();
-        }
-        
-        // 停止拖动
-        function stopDrag() {
-            if (isDragging && selectedLayer) {
-                console.log("停止拖动，保存到历史记录");
-                saveToHistory();
+                return '';
             }
-            isDragging = false;
-            document.removeEventListener('mousemove', onDrag);
-            document.removeEventListener('mouseup', stopDrag);
-        }
-        
-        // 停止触摸拖动
-        function stopDragTouch() {
-            if (isDragging && selectedLayer) {
-                console.log("停止触摸拖动，保存到历史记录");
-                saveToHistory();
-            }
-            isDragging = false;
-            document.removeEventListener('touchmove', onDragTouch);
-            document.removeEventListener('touchend', stopDragTouch);
-        }
-        
-        // 新增：编辑图层
-        function editLayer(layer) {
-            // 将图层数据填充到表单
-            document.getElementById('textContent').value = layer.text;
-            document.getElementById('fontSize').value = layer.fontSize;
-            document.getElementById('fontColor').value = layer.color;
-            document.getElementById('bgColor').value = layer.bgColor;
-            document.getElementById('bgOpacity').value = layer.bgOpacity;
-            
-            // 设置字体和特效
-            const fontSelect = document.getElementById('fontFamily');
-            for (let i = 0; i < fontSelect.options.length; i++) {
-                if (fontSelect.options[i].value === layer.fontFamily) {
-                    fontSelect.selectedIndex = i;
-                    break;
-                }
-            }
-            
-            const effectSelect = document.getElementById('textEffect');
-            for (let i = 0; i < effectSelect.options.length; i++) {
-                if (effectSelect.options[i].value === layer.textEffect) {
-                    effectSelect.selectedIndex = i;
-                    break;
-                }
-            }
-            
-            // 更新文本预览
-            updateTextPreview();
-            
-            // 滚动到文本输入区域，确保用户能看到编辑栏
-            document.getElementById('textContent').scrollIntoView({behavior: 'smooth'});
-            // 聚焦到文本输入框
-            document.getElementById('textContent').focus();
-            
-            // 更改添加按钮为更新按钮
-            const addBtn = document.getElementById('addText');
-            const originalText = addBtn.textContent;
-            const originalHandler = addBtn.onclick;
-            
-            addBtn.textContent = '更新文本';
-            addBtn.style.backgroundColor = '#e67e22'; // 改变按钮颜色，提示在编辑模式
-            
-            // 定义更新函数
-            const updateFunction = function() {
-                const text = document.getElementById('textContent').value.trim();
-                if (!text) {
-                    alert('请输入文本内容');
-                    return;
-                }
-                
-                // 保存原始位置
-                const x = layer.x;
-                const y = layer.y;
-                
-                // 删除旧图层
-                textLayers = textLayers.filter(l => l.id !== layer.id);
-                
-                // 获取新设置
-                const fontSize = parseInt(document.getElementById('fontSize').value) || 24;
-                const fontFamily = document.getElementById('fontFamily').value;
-                const color = document.getElementById('fontColor').value;
-                const bgColor = document.getElementById('bgColor').value;
-                const bgOpacity = parseFloat(document.getElementById('bgOpacity').value);
-                const textEffect = document.getElementById('textEffect').value;
-                
-                // 创建新图层
-                addTextLayer(text, x, y, fontSize, color, bgColor, bgOpacity, fontFamily, textEffect);
-                
-                // 恢复按钮状态
-                addBtn.textContent = originalText;
-                addBtn.style.backgroundColor = '#3498db';
-                addBtn.onclick = originalHandler;
-                
-                // 移除键盘事件监听
-                document.removeEventListener('keydown', keyHandler);
-            };
-            
-            // 添加键盘事件处理
-            const keyHandler = function(e) {
-                // 按回车键确认更新
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    updateFunction();
-                    e.preventDefault();
-                }
-                // 按Esc取消编辑
-                else if (e.key === 'Escape') {
-                    addBtn.textContent = originalText;
-                    addBtn.style.backgroundColor = '#3498db';
-                    addBtn.onclick = originalHandler;
-                    document.removeEventListener('keydown', keyHandler);
-                    e.preventDefault();
-                }
-            };
-            
-            document.addEventListener('keydown', keyHandler);
-            addBtn.onclick = updateFunction;
-        }
-        
-        // 新增：删除图层
-        function deleteLayer(layerId) {
-            console.log("删除图层:", layerId);
-            
-            try {
-                // 保存删除前的状态（用于撤销）
-                saveToHistory();
-                
-                // 过滤掉要删除的图层
-                textLayers = textLayers.filter(layer => layer.id !== layerId);
-                
-                // 如果删除的是当前选中的图层，取消选择
-                if (selectedLayer && selectedLayer.id === layerId) {
-                    selectedLayer = null;
-                }
-                
-                // 重新渲染所有图层
-                renderTextLayers();
-                
-                console.log("图层删除成功，剩余图层数:", textLayers.length);
-            } catch (error) {
-                console.error("删除图层时出错:", error);
-            }
-        }
-        
-        // 新增：更新文本预览
-        function updateTextPreview() {
-            const text = document.getElementById('textContent').value || '文字预览';
-            const fontSize = document.getElementById('fontSize').value + 'px';
-            const fontFamily = document.getElementById('fontFamily').value;
-            const color = document.getElementById('fontColor').value;
-            const bgColor = document.getElementById('bgColor').value;
-            const bgOpacity = document.getElementById('bgOpacity').value;
-            const textEffect = document.getElementById('textEffect').value;
-            
-            const preview = document.getElementById('textPreview');
-            preview.innerText = text;
-            preview.style.fontSize = fontSize;
-            preview.style.fontFamily = fontFamily;
-            preview.style.color = color;
-            
-            // 清除所有特效类
-            preview.className = 'text-preview';
-            
-            // 设置背景
-            if (bgOpacity > 0) {
-                const rgb = hexToRgb(bgColor);
-                preview.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${bgOpacity})`;
-            } else {
-                preview.style.backgroundColor = 'transparent';
-            }
-            
-            // 添加特效
-            if (textEffect && textEffect !== 'none') {
-                preview.classList.add(`text-effect-${textEffect}`);
-            }
-        }
-        
-        // 新增：保存到历史记录
-        function saveToHistory() {
-            console.log("保存当前状态到历史记录");
-            
-            // 在撤销/重做过程中不记录历史
-            if (isUndoingRedoing) return;
-            
-            try {
-                // 删除当前点之后的所有历史记录
-                if (historyIndex < history.length - 1) {
-                    history = history.slice(0, historyIndex + 1);
-                }
-                
-                // 保存当前状态的深拷贝
-                const currentState = {
-                    textLayers: JSON.parse(JSON.stringify(textLayers)),
-                    selectedLayerId: selectedLayer ? selectedLayer.id : null
-                };
-                
-                // 添加到历史记录
-                history.push(currentState);
-                historyIndex = history.length - 1;
-                
-                // 更新撤销/重做按钮状态
-                updateHistoryButtons();
-                
-                console.log(`历史记录已更新，当前索引: ${historyIndex}, 总记录数: ${history.length}`);
-            } catch (error) {
-                console.error("保存历史记录时出错:", error);
-            }
-        }
-        
-        // 新增：撤销
-        function undo() {
-            console.log("尝试撤销，当前索引:", historyIndex);
-            
-            if (historyIndex <= 0) {
-                console.log("无法撤销，已经是最早状态");
-                return;
-            }
-            
-            try {
-                isUndoingRedoing = true;
-                historyIndex--;
-                
-                const state = history[historyIndex];
-                console.log("恢复到状态:", state);
-                
-                textLayers = JSON.parse(JSON.stringify(state.textLayers));
-                selectedLayer = state.selectedLayerId ? 
-                    textLayers.find(layer => layer.id === state.selectedLayerId) : null;
-                
-                renderTextLayers();
-                updateHistoryButtons();
-                console.log("撤销完成，当前索引:", historyIndex);
-            } catch (error) {
-                console.error("撤销操作出错:", error);
-            } finally {
-                isUndoingRedoing = false;
-            }
-        }
-        
-        // 新增：重做
-        function redo() {
-            console.log("尝试重做，当前索引:", historyIndex, "总历史数:", history.length);
-            
-            if (historyIndex >= history.length - 1) {
-                console.log("无法重做，已经是最新状态");
-                return;
-            }
-            
-            try {
-                isUndoingRedoing = true;
-                historyIndex++;
-                
-                const state = history[historyIndex];
-                console.log("前进到状态:", state);
-                
-                textLayers = JSON.parse(JSON.stringify(state.textLayers));
-                selectedLayer = state.selectedLayerId ? 
-                    textLayers.find(layer => layer.id === state.selectedLayerId) : null;
-                
-                renderTextLayers();
-                updateHistoryButtons();
-                console.log("重做完成，当前索引:", historyIndex);
-            } catch (error) {
-                console.error("重做操作出错:", error);
-            } finally {
-                isUndoingRedoing = false;
-            }
-        }
-        
-        // 新增：更新历史按钮状态
-        function updateHistoryButtons() {
-            document.getElementById('undoBtn').disabled = historyIndex <= 0;
-            document.getElementById('redoBtn').disabled = historyIndex >= history.length - 1;
-        }
-        
-        // 保存模板
-        function saveTemplate() {
-            if (textLayers.length === 0) {
-                alert('请先添加至少一个文本图层');
-                return;
-            }
-            
-            const name = document.getElementById('templateName').value.trim() || `模板 ${templates.length + 1}`;
-            
-            // 创建缩略图
-            const thumbnailCanvas = document.createElement('canvas');
-            thumbnailCanvas.width = 100;
-            thumbnailCanvas.height = 100;
-            const thumbnailCtx = thumbnailCanvas.getContext('2d');
-            
-            // 如果有图片，绘制缩略图
-            if (currentImage) {
-                const ratio = Math.min(100 / currentImage.width, 100 / currentImage.height);
-                const width = currentImage.width * ratio;
-                const height = currentImage.height * ratio;
-                const x = (100 - width) / 2;
-                const y = (100 - height) / 2;
-                
-                thumbnailCtx.drawImage(currentImage, x, y, width, height);
-            } else {
-                thumbnailCtx.fillStyle = '#f0f0f0';
-                thumbnailCtx.fillRect(0, 0, 100, 100);
-            }
-            
-            // 为模板添加预览文本
-            let textPreview = '';
-            if (textLayers.length > 0) {
-                const previewLayers = textLayers.slice(0, 2); // 最多显示两个图层
-                textPreview = previewLayers.map(layer => layer.text).join(', ');
-                if (textLayers.length > 2) {
-                    textPreview += '...';
-                }
-            }
-            
-            const template = {
-                id: Date.now().toString(),
-                name,
-                textLayers: JSON.parse(JSON.stringify(textLayers)),
-                thumbnail: thumbnailCanvas.toDataURL(),
-                textPreview: textPreview
-            };
-            
-            templates.push(template);
-            localStorage.setItem('imageTextTemplates', JSON.stringify(templates));
-            
-            renderTemplateList();
-            alert(`模板 "${name}" 已保存`);
-        }
-        
-        // 应用模板
-        function applyTemplate(templateId) {
-            const template = templates.find(t => t.id === templateId);
-            if (!template) return;
-            
-            textLayers = JSON.parse(JSON.stringify(template.textLayers));
-            renderTextLayers();
-            
-            // 新增：保存到历史记录
-            saveToHistory();
-            
-            // 更新模板选择下拉框
-            document.getElementById('templateSelect').value = templateId;
-        }
-        
-        // 删除模板
-        function deleteTemplate(templateId) {
-            if (!confirm('确定要删除这个模板吗？')) return;
-            
-            templates = templates.filter(t => t.id !== templateId);
-            localStorage.setItem('imageTextTemplates', JSON.stringify(templates));
-            renderTemplateList();
-        }
-        
-        // 渲染模板列表
-        function renderTemplateList() {
-            const container = document.getElementById('templateList');
-            container.innerHTML = '';
-            
-            // 更新模板下拉选择框
-            const templateSelect = document.getElementById('templateSelect');
-            templateSelect.innerHTML = '<option value="">-- 选择要应用的模板 --</option>';
-            
-            if (templates.length === 0) {
-                container.innerHTML = '<div style="text-align: center; color: #999;">暂无保存的模板</div>';
-                return;
-            }
-            
-            templates.forEach(template => {
-                // 添加到模板列表
-                const item = document.createElement('div');
-                item.className = 'template-item';
-                
-                const preview = document.createElement('div');
-                preview.className = 'template-preview';
-                const img = document.createElement('img');
-                img.src = template.thumbnail;
-                preview.appendChild(img);
-                
-                // 显示模板名称和文本预览
-                const info = document.createElement('div');
-                info.style.flex = '1';
-                info.style.overflow = 'hidden';
-                info.style.marginRight = '10px';
-                
-                const name = document.createElement('div');
-                name.textContent = template.name;
-                name.style.fontWeight = 'bold';
-                
-                const textPreview = document.createElement('div');
-                textPreview.textContent = template.textPreview || '';
-                textPreview.style.fontSize = '12px';
-                textPreview.style.color = '#777';
-                textPreview.style.overflow = 'hidden';
-                textPreview.style.textOverflow = 'ellipsis';
-                textPreview.style.whiteSpace = 'nowrap';
-                
-                info.appendChild(name);
-                info.appendChild(textPreview);
-                
-                const buttons = document.createElement('div');
-                buttons.className = 'template-buttons';
-                
-                const applyButton = document.createElement('button');
-                applyButton.textContent = '应用';
-                applyButton.onclick = () => applyTemplate(template.id);
-                
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = '删除';
-                deleteButton.className = 'danger';
-                deleteButton.onclick = () => deleteTemplate(template.id);
-                
-                buttons.appendChild(applyButton);
-                buttons.appendChild(deleteButton);
-                
-                item.appendChild(preview);
-                item.appendChild(info);
-                item.appendChild(buttons);
-                container.appendChild(item);
-                
-                // 添加到下拉选择框
-                const option = document.createElement('option');
-                option.value = template.id;
-                option.textContent = template.name;
-                templateSelect.appendChild(option);
-            });
-        }
-        
-        // 添加批量图片
-        function addBatchImage(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    batchImages.push({
-                        id: Date.now().toString(),
-                        img: img,
-                        src: e.target.result
-                    });
-                    renderBatchImages();
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        // 渲染批量图片列表
-        function renderBatchImages() {
-            const container = document.getElementById('batchImages');
-            container.innerHTML = '';
-            
-            batchImages.forEach(item => {
-                const imageItem = document.createElement('div');
-                imageItem.className = 'batch-image-item';
-                
-                const img = document.createElement('img');
-                img.src = item.src;
-                
-                const removeButton = document.createElement('button');
-                removeButton.className = 'remove-button';
-                removeButton.textContent = '×';
-                removeButton.onclick = () => {
-                    batchImages = batchImages.filter(i => i.id !== item.id);
-                    renderBatchImages();
-                };
-                
-                imageItem.appendChild(img);
-                imageItem.appendChild(removeButton);
-                container.appendChild(imageItem);
-            });
-        }
-        
-        // 将选定模板应用到所有批量图片
-        function applyTemplateToAll() {
-            if (batchImages.length === 0) {
-                alert('请先添加批量处理的图片');
-                return;
-            }
-            
-            const templateSelect = document.getElementById('templateSelect');
-            const selectedTemplateId = templateSelect.value;
-            
-            if (!selectedTemplateId) {
-                // 如果没有选择模板但有当前文本图层，使用当前文本图层
-                if (textLayers.length === 0) {
-                    alert('请先选择一个模板或添加文本');
-                    return;
-                }
-                
-                alert(`当前文本设置将应用到 ${batchImages.length} 张图片`);
-            } else {
-                // 应用选定的模板
-                const template = templates.find(t => t.id === selectedTemplateId);
-                if (template) {
-                    textLayers = JSON.parse(JSON.stringify(template.textLayers));
-                    renderTextLayers();
-                    alert(`模板 "${template.name}" 将应用到 ${batchImages.length} 张图片`);
-                }
-            }
-        }
-        
-        // 导出当前图片
-        function exportImage() {
-            if (!currentImage) {
-                alert('请先上传图片');
-                return;
-            }
-            
-            // 创建一个离屏画布
-            const exportCanvas = document.createElement('canvas');
-            exportCanvas.width = canvas.width;
-            exportCanvas.height = canvas.height;
-            const exportCtx = exportCanvas.getContext('2d');
-            
-            // 绘制背景图片
-            exportCtx.drawImage(currentImage, 0, 0, canvas.width, canvas.height);
-            
-            // 绘制文本图层
-            textLayers.forEach(layer => {
-                exportCtx.font = `${layer.fontSize}px ${layer.fontFamily || 'sans-serif'}`;
-                exportCtx.fillStyle = layer.color;
-                
-                // 绘制背景
-                if (layer.bgOpacity > 0) {
-                    const textWidth = exportCtx.measureText(layer.text).width;
-                    const textHeight = layer.fontSize * 1.2;
-                    const rgb = hexToRgb(layer.bgColor);
+
+            getFilename(url) {
+                try {
+                    const urlPath = new URL(url).pathname;
+                    let filename = urlPath.split('/').pop();
                     
-                    exportCtx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${layer.bgOpacity})`;
-                    exportCtx.fillRect(layer.x, layer.y - layer.fontSize * 0.8, textWidth, textHeight);
-                    exportCtx.fillStyle = layer.color;
-                }
-                
-                // 处理特效 (基础模拟)
-                if (layer.textEffect === 'shadow') {
-                    exportCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-                    exportCtx.shadowBlur = 5;
-                    exportCtx.shadowOffsetX = 3;
-                    exportCtx.shadowOffsetY = 3;
-                } else if (layer.textEffect === 'outline') {
-                    exportCtx.strokeStyle = '#000';
-                    exportCtx.lineWidth = 2;
-                    exportCtx.strokeText(layer.text, layer.x, layer.y);
-                }
-                
-                exportCtx.fillText(layer.text, layer.x, layer.y);
-                
-                // 重置阴影
-                exportCtx.shadowColor = 'transparent';
-                exportCtx.shadowBlur = 0;
-                exportCtx.shadowOffsetX = 0;
-                exportCtx.shadowOffsetY = 0;
-            });
-            
-            // 导出为图片
-            const dataURL = exportCanvas.toDataURL('image/png');
-            
-            // 创建下载链接
-            const link = document.createElement('a');
-            link.download = 'image-with-text.png';
-            link.href = dataURL;
-            link.click();
-        }
-        
-        // 导出所有批量图片为ZIP包
-        function exportAllImages() {
-            if (batchImages.length === 0) {
-                alert('请先添加批量处理的图片');
-                return;
-            }
-            
-            if (textLayers.length === 0) {
-                alert('请先添加文本或应用模板');
-                return;
-            }
-            
-            // 创建加载提示
-            const loading = document.createElement('div');
-            loading.className = 'loading';
-            loading.innerHTML = '<div class="loading-spinner"></div><div style="margin-top: 10px;">处理中...</div>';
-            document.body.appendChild(loading);
-            
-            // 创建ZIP文件
-            const zip = new JSZip();
-            const imgFolder = zip.folder("处理后图片");
-            let processedCount = 0;
-            
-            // 处理每张图片
-            batchImages.forEach((item, index) => {
-                // 创建一个离屏画布
-                const exportCanvas = document.createElement('canvas');
-                exportCanvas.width = item.img.width;
-                exportCanvas.height = item.img.height;
-                const exportCtx = exportCanvas.getContext('2d');
-                
-                // 绘制背景图片
-                exportCtx.drawImage(item.img, 0, 0, item.img.width, item.img.height);
-                
-                // 绘制文本图层
-                textLayers.forEach(layer => {
-                    exportCtx.font = `${layer.fontSize}px ${layer.fontFamily || 'sans-serif'}`;
-                    exportCtx.fillStyle = layer.color;
-                    
-                    // 绘制背景
-                    if (layer.bgOpacity > 0) {
-                        const textWidth = exportCtx.measureText(layer.text).width;
-                        const textHeight = layer.fontSize * 1.2;
-                        const rgb = hexToRgb(layer.bgColor);
-                        
-                        exportCtx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${layer.bgOpacity})`;
-                        exportCtx.fillRect(layer.x, layer.y - layer.fontSize * 0.8, textWidth, textHeight);
-                        exportCtx.fillStyle = layer.color;
-                    }
-                    
-                    // 如果有特效，尝试绘制简化版特效
-                    if (layer.textEffect === 'shadow') {
-                        exportCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-                        exportCtx.shadowBlur = 5;
-                        exportCtx.shadowOffsetX = 3;
-                        exportCtx.shadowOffsetY = 3;
-                    } else if (layer.textEffect === 'outline') {
-                        // 简单描边实现
-                        exportCtx.strokeStyle = '#000';
-                        exportCtx.lineWidth = 2;
-                        exportCtx.strokeText(layer.text, layer.x, layer.y);
-                    }
-                    
-                    exportCtx.fillText(layer.text, layer.x, layer.y);
-                    
-                    // 重置阴影
-                    exportCtx.shadowColor = 'transparent';
-                    exportCtx.shadowBlur = 0;
-                    exportCtx.shadowOffsetX = 0;
-                    exportCtx.shadowOffsetY = 0;
-                });
-                
-                // 转换为图片数据
-                exportCanvas.toBlob(blob => {
-                    // 添加到ZIP文件
-                    const fileName = `image_${index + 1}.png`;
-                    imgFolder.file(fileName, blob);
-                    
-                    processedCount++;
-                    
-                    // 当所有图片都处理完成后生成并下载ZIP文件
-                    if (processedCount === batchImages.length) {
-                        zip.generateAsync({type: "blob"}).then(function(content) {
-                            saveAs(content, "processed_images.zip");
-                            document.body.removeChild(loading);
-                            alert('导出完成！图片已打包为ZIP文件');
-                        });
-                    }
-                }, 'image/png');
-            });
-        }
-        
-        // 辅助函数：十六进制颜色转RGB
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
-            } : {r: 0, g: 0, b: 0};
-        }
-        
-        // 初始化事件监听
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("页面加载完成，初始化应用...");
-            
-            try {
-                // 图片上传
-                document.getElementById('imageUpload').addEventListener('change', (e) => {
-                    if (e.target.files && e.target.files[0]) {
-                        loadImage(e.target.files[0]);
-                    }
-                });
-                
-                // 重置画布
-                document.getElementById('resetCanvas').addEventListener('click', () => {
-                    if (confirm('确定要重置画布吗？这将清除所有文本图层。')) {
-                        initCanvas();
-                        saveToHistory();
-                    }
-                });
-                
-                // 添加文本
-                document.getElementById('addText').addEventListener('click', () => {
-                    const text = document.getElementById('textContent').value.trim();
-                    if (!text) {
-                        alert('请输入文本内容');
-                        return;
-                    }
-                    
-                    const fontSize = parseInt(document.getElementById('fontSize').value) || 24;
-                    const color = document.getElementById('fontColor').value;
-                    const bgColor = document.getElementById('bgColor').value;
-                    const bgOpacity = parseFloat(document.getElementById('bgOpacity').value);
-                    const fontFamily = document.getElementById('fontFamily').value;
-                    const textEffect = document.getElementById('textEffect').value;
-                    
-                    addTextLayer(text, 50, 50, fontSize, color, bgColor, bgOpacity, fontFamily, textEffect);
-                });
-                
-                // 文本内容和样式更改时更新预览
-                document.getElementById('textContent').addEventListener('input', updateTextPreview);
-                document.getElementById('fontSize').addEventListener('input', updateTextPreview);
-                document.getElementById('fontColor').addEventListener('input', updateTextPreview);
-                document.getElementById('bgColor').addEventListener('input', updateTextPreview);
-                document.getElementById('bgOpacity').addEventListener('input', updateTextPreview);
-                document.getElementById('fontFamily').addEventListener('change', updateTextPreview);
-                document.getElementById('textEffect').addEventListener('change', updateTextPreview);
-                
-                // 模板管理
-                document.getElementById('saveTemplate').addEventListener('click', saveTemplate);
-                document.getElementById('exportImage').addEventListener('click', exportImage);
-                
-                // 批量处理
-                document.getElementById('batchUpload').addEventListener('change', (e) => {
-                    if (e.target.files) {
-                        Array.from(e.target.files).forEach(file => {
-                            addBatchImage(file);
-                        });
-                    }
-                });
-                
-                document.getElementById('applyToAll').addEventListener('click', applyTemplateToAll);
-                document.getElementById('exportAll').addEventListener('click', exportAllImages);
-                
-                // 撤销/重做按钮
-                const undoBtn = document.getElementById('undoBtn');
-                const redoBtn = document.getElementById('redoBtn');
-                
-                undoBtn.addEventListener('click', function() {
-                    console.log("点击撤销按钮");
-                    undo();
-                });
-                
-                redoBtn.addEventListener('click', function() {
-                    console.log("点击重做按钮");
-                    redo();
-                });
-                
-                // 键盘快捷键
-                document.addEventListener('keydown', function(e) {
-                    // Ctrl+Z: 撤销
-                    if (e.ctrlKey && e.key === 'z') {
-                        e.preventDefault();
-                        console.log("触发撤销快捷键 Ctrl+Z");
-                        undo();
-                    }
-                    
-                    // Ctrl+Y: 重做
-                    if (e.ctrlKey && e.key === 'y') {
-                        e.preventDefault();
-                        console.log("触发重做快捷键 Ctrl+Y");
-                        redo();
-                    }
-                    
-                    // Delete: 删除选中图层
-                    if (e.key === 'Delete' && selectedLayer) {
-                        e.preventDefault();
-                        console.log("触发删除快捷键 Delete");
-                        deleteLayer(selectedLayer.id);
-                    }
-                });
-                
-                // 点击画布区域取消选择，双击添加文本
-                const canvasContainer = document.querySelector('.canvas-container');
-                
-                // 单击事件 - 取消选择
-                canvasContainer.addEventListener('click', (e) => {
-                    if (e.target === canvas || e.target.classList.contains('canvas-container')) {
-                        selectedLayer = null;
-                        renderTextLayers();
-                    }
-                });
-                
-                // 双击事件 - 直接添加文本
-                canvasContainer.addEventListener('dblclick', (e) => {
-                    // 如果双击的是画布或画布容器（非文本图层）
-                    if (e.target === canvas || e.target.classList.contains('canvas-container')) {
-                        // 获取画布相对于视口的位置
-                        const rect = canvas.getBoundingClientRect();
-                        
-                        // 计算鼠标在画布上的坐标
-                        const x = e.clientX - rect.left;
-                        const y = e.clientY - rect.top;
-                        
-                        // 获取当前设置的文本内容和样式
-                        const text = document.getElementById('textContent').value.trim() || '双击输入文字';
-                        const fontSize = parseInt(document.getElementById('fontSize').value) || 24;
-                        const color = document.getElementById('fontColor').value;
-                        const bgColor = document.getElementById('bgColor').value;
-                        const bgOpacity = parseFloat(document.getElementById('bgOpacity').value);
-                        const fontFamily = document.getElementById('fontFamily').value;
-                        const textEffect = document.getElementById('textEffect').value;
-                        
-                        // 在点击位置添加文本层
-                        const newLayer = addTextLayer(text, x, y, fontSize, color, bgColor, bgOpacity, fontFamily, textEffect);
-                        
-                        // 如果添加的是默认文本，立即激活编辑模式
-                        if (newLayer && text === '双击输入文字') {
-                            setTimeout(() => {
-                                editLayer(newLayer);
-                            }, 100);
+                    if (!filename.includes('.')) {
+                        if (url.includes('video') || url.includes('.mp4') || url.includes('stream')) {
+                            filename += '.mp4';
+                        } else if (url.includes('image') || url.includes('.jpg') || url.includes('.png') || url.includes('imageView')) {
+                            filename += '.jpg';
+                        } else {
+                            filename += '.file';
                         }
                     }
-                });
-                
-                // 初始化画布和模板列表
-                initCanvas();
-                renderTemplateList();
-                updateTextPreview();
-                saveToHistory(); // 保存初始状态
-                
-                // 添加提示框，向用户说明新功能
-                setTimeout(() => {
-                    alert('提示：\n1. 您可以直接双击图片区域添加文字\n2. 双击文本可编辑文字内容\n3. 点击文本框上的×按钮删除文字\n4. 使用撤销/重做按钮或快捷键Ctrl+Z/Ctrl+Y可以撤销/重做操作');
-                }, 1000);
-                
-                console.log("应用初始化完成");
-            } catch (error) {
-                console.error("初始化事件时出错:", error);
-                alert("应用初始化失败，请刷新页面重试");
+                    
+                    filename = filename.replace(/[<>:"/\\|?*]/g, '_');
+                    
+                    if (!filename || filename === '.file') {
+                        const timestamp = Date.now();
+                        const isVideo = url.includes('video') || url.includes('.mp4') || url.includes('stream');
+                        const ext = isVideo ? '.mp4' : '.jpg';
+                        filename = `媒体文件_${timestamp}${ext}`;
+                    }
+                    
+                    return filename;
+                } catch (error) {
+                    return `文件_${Date.now()}.file`;
+                }
             }
+
+            saveFile(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        // 初始化应用
+        document.addEventListener('DOMContentLoaded', () => {
+            new MediaParser();
         });
     </script>
 </body>
